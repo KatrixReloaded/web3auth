@@ -2,7 +2,7 @@ import { MetaMaskConnector } from "wagmi/connectors/metaMask";
 import { signIn } from "next-auth/react";
 import { useAccount, useConnect, useSignMessage, useDisconnect } from "wagmi";
 import { useRouter } from "next/router";
-import { useAuthRequestChallengeEvm } from "@moralisweb3/next";
+import axios from "axios";
 
 function SignIn() {
     const { connectAsync } = useConnect();
@@ -21,15 +21,24 @@ function SignIn() {
             connector: new MetaMaskConnector(),
         });
 
-        const { message } = await requestChallengeAsync({
-            address: account,
-            chainId: chain.id,
-        });
+        const userData = { address: account, chain: chain.id, network: "evm" };
+
+        const { data } = await axios.post(
+            "/api/auth/request-message",
+            userData,
+            {
+                headers: {
+                    "content-type": "application/json",
+                },
+            }
+        );
+
+        const message = data.message;
 
         const signature = await signMessageAsync({ message });
 
         // redirect user after success authentication to '/user' page
-        const { url } = await signIn("moralis-auth", {
+        const { url } = await signIn("credentials", {
             message,
             signature,
             redirect: false,
